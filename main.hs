@@ -1,5 +1,5 @@
 module Main where
-import Text.ParserCombinators.Parsec
+import Text.ParserCombinators.Parsec hiding (spaces)
 
 main :: IO ()
 main = do
@@ -10,6 +10,9 @@ symbol :: Parser Char
 symbol = oneOf "+-*/%<>=&|^_~#:?$!@"
 
 expr :: String -> String
-expr input = case parse symbol "scheme" input of
+expr input = case parse (lexeme >> symbol) "scheme" input of
   Left err -> show err
   Right val -> show val
+
+spaces :: Parser ()
+spaces = skipMany1 space
