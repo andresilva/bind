@@ -1,11 +1,11 @@
 module Main where
 import Control.Monad
+import Numeric
 import qualified Text.ParserCombinators.Parsec as P
 import Text.ParserCombinators.Parsec (Parser, (<|>), char, choice,
                                       digit, hexDigit, letter, many, many1,
                                       noneOf, octDigit, oneOf, parse, skipMany1,
                                       space, try)
-import Numeric (readOct, readHex)
 
 main :: IO ()
 main = do
@@ -27,6 +27,7 @@ data Val = Atom String
          | List [Val]
          | DottedList [Val] Val
          | Number Integer
+         | Float Float
          | String String
          | Bool Bool
          deriving (Show)
@@ -57,5 +58,15 @@ number = liftM Number $ decimal <|> octal <|> hex
         hex = liftM (fst . head . readHex) $ try (P.string "#x") >> many1 hexDigit
         octal = liftM (fst . head . readOct) $ try (P.string "#o") >> many1 octDigit
 
+float :: Parser Val
+float = do
+  integer <- many1 digit
+  _ <- char '.'
+  fractional <- many1 digit
+  let float = integer ++ "." ++ fractional
+  return $ Float $ fst $ readFloat float !! 0
+
 expr :: Parser Val
-expr = number <|> atom <|> string
+expr = foldl1 (<|>) tryparsers
+  where parsers = [float, number, atom, string]
+        tryparsers = fmap try parsers
