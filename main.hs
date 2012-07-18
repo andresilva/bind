@@ -3,8 +3,8 @@ import Control.Monad
 import Numeric
 import qualified Text.ParserCombinators.Parsec as P
 import Text.ParserCombinators.Parsec (Parser, (<|>), char, choice,
-                                      digit, hexDigit, letter, many, many1,
-                                      noneOf, octDigit, oneOf, parse, skipMany1,
+                                      digit, endBy, hexDigit, letter, many, many1,
+                                      noneOf, octDigit, oneOf, parse, sepBy, skipMany1,
                                       space, try)
 
 main :: IO ()
@@ -66,7 +66,28 @@ float = do
   let float = integer ++ "." ++ fractional
   return $ Float $ fst $ readFloat float !! 0
 
+list :: Parser Val
+list = liftM List $ sepBy expr spaces
+
+dottedList :: Parser Val
+dottedList = do
+  head <- endBy expr spaces
+  tail <- char '.' >> spaces >> expr
+  return $ DottedList head tail
+
+quoted :: Parser Val
+quoted = do
+  char '\''
+  x <- expr
+  return $ List [Atom "quote", x]
+
+lists :: Parser Val
+lists = do
+  char '('
+  list <- try list <|> dottedList
+  char ')'
+  return list
+
 expr :: Parser Val
-expr = foldl1 (<|>) tryparsers
-  where parsers = [float, number, atom, string]
-        tryparsers = fmap try parsers
+expr = foldl1 (<|>) parsers
+  where parsers = [try float, number, atom, string, quoted, lists]
