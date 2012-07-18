@@ -1,10 +1,11 @@
 module Main where
 import Control.Monad
-import qualified Text.ParserCombinators.Parsec as Parsec
-import Text.ParserCombinators.Parsec (Parser, (<|>), char,
-                                      digit, letter, many, many1,
-                                      noneOf, oneOf, parse, skipMany1,
-                                      space)
+import qualified Text.ParserCombinators.Parsec as P
+import Text.ParserCombinators.Parsec (Parser, (<|>), char, choice,
+                                      digit, hexDigit, letter, many, many1,
+                                      noneOf, octDigit, oneOf, parse, skipMany1,
+                                      space, try)
+import Numeric (readOct, readHex)
 
 main :: IO ()
 main = do
@@ -51,12 +52,10 @@ atom = do first <- letter <|> symbol
             otherwise -> Atom atom
 
 number :: Parser Val
--- number = do
-  -- n <- many1 digit
-  -- return (Number . read $ n)
--- number = many1 digit >>= return . Number . read
-number = liftM (Number . read) $ many1 digit
-
+number = liftM Number $ decimal <|> octal <|> hex
+  where decimal = liftM read $ many1 digit
+        hex = liftM (fst . head . readHex) $ try (P.string "#x") >> many1 hexDigit
+        octal = liftM (fst . head . readOct) $ try (P.string "#o") >> many1 octDigit
 
 expr :: Parser Val
-expr = atom <|> string <|> number
+expr = number <|> atom <|> string
