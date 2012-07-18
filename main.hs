@@ -32,9 +32,14 @@ data Val = Atom String
 
 string :: Parser Val
 string = do char '"'
-            x <- many (noneOf("\""))
+            x <- many $ chars
             char '"'
             return $ String x
+  where chars = escaped <|> noneOf "\""
+        escaped = char '\\' >> choice (zipWith escapedChar codes replacements)
+        escapedChar code replacement = char code >> return replacement
+        codes        = ['b',  'n',  'f',  'r',  't',  '\\', '\"']
+        replacements = ['\b', '\n', '\f', '\r', '\t', '\\', '\"']
 
 atom :: Parser Val
 atom = do first <- letter <|> symbol
