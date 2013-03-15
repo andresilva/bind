@@ -1,4 +1,4 @@
 bind
 ====
 
-A small Scheme interpreter written in Haskell
+A small Scheme parser written in Haskell
